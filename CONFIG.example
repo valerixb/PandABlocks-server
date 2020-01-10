@@ -25,6 +25,7 @@
 # only required if building the driver target.
 #
 # KERNEL_DIR = /scratch/tmp/PandA-rootfs/build/linux
+# APP_DIR = /scratch/tmp/PandA-FPGA/build/apps/NAMC-no-fmc
 
 # Some tools from the rootfs are used.
 #

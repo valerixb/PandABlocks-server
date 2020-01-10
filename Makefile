@@ -108,6 +108,7 @@ simserver: simserver.in
 $(BUILD_DIR)/config_d: config_d/registers $(wildcard python/sim_config/*)
 	mkdir -p $@
 	rm -f $@/*
+	cp -f $(APP_DIR)/autogen/config_d/* $(TOP)/python/sim_config/	
 	cp python/sim_config/* $@
 	cat $< >>$@/registers
 	touch $@
@@ -136,7 +137,8 @@ clean-docs:
 # ------------------------------------------------------------------------------
 # Build installation package
 
-ZPKG_DEPENDS = $(PANDA_KO) $(SERVER) $(SLOW_LOAD) $(DOCS_BUILD_DIR)/index.html
+#ZPKG_DEPENDS = $(PANDA_KO) $(SERVER) $(SLOW_LOAD) $(DOCS_BUILD_DIR)/index.html
+ZPKG_DEPENDS = $(PANDA_KO) $(SERVER) $(DOCS_BUILD_DIR)/index.html
 
 ZPKG = $(BUILD_DIR)/panda-server@$(GIT_VERSION).zpg
 
