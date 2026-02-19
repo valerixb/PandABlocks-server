@@ -71,7 +71,7 @@ Field
 ``param`` field-subtype [ ``=`` value ]
 ``read`` field-subtype
 ``write`` field-subtype
-``time`` [ ``>`` min_value ]
+``time``
 ``bit_out``
 ``pos_out`` [ scale [ offset [ units ]]]
 ``ext_out`` ( ``timestamp`` | ``samples`` | ``bits`` group )
@@ -96,13 +96,9 @@ Field
     actions on a block.  The `field-subtype` must be specified, and the `action`
     subtype is useful for ``write`` fields which take no data.
 
-``time`` [ ``>`` min_value ]
+``time``
     Time fields behave like ``param`` fields, but need special treatment because
     the underlying value is 64-bits and so two registers need to be written.
-
-    If desired a minimum valid value can be specified as `min_value`.  This will
-    prevent the writing of values less than this value and can be read as the
-    ``.MIN`` attribute.
 
 ``bit_out``
     This identifies an output bit.
@@ -205,7 +201,7 @@ Class                   Register syntax
 ``bit_mux``             register
 ``pos_mux``             register
 ``table``               ``short`` size init-reg fill-reg length-reg
-``table``               ``long`` ``2^``\ size base-reg length-reg
+``table``               ``long`` ``2^``\ size nbuf base-reg length-reg
 ======================= ========================================================
 
 where the syntax ``(...)N`` means that the given register number is repeated N

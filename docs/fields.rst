@@ -127,10 +127,6 @@ Field type          Description
         This attribute can be read or written to report or set the delay in FPGA
         ticks.
 
-    ``MIN``
-        This reports the minimum valid value for this field in the currently
-        selected units.
-
     The ``UNITS`` attribute determines how numbers read or written to the field
     are interpreted.  For example::
 
@@ -284,12 +280,16 @@ Field type          Description
 
     Tables values are written with the special ``<`` syntax:
 
-    =================================== ========================================
-    block number\ ``.``\ field\ ``<``   Normal table write, overwrite table
-    block number\ ``.``\ field\ ``<<``  Normal table write, append to table
-    block number\ ``.``\ field\ ``<B``  Base-64 table write, overwrite table
-    block number\ ``.``\ field\ ``<<B`` Base-64 table write, append to table
-    =================================== ========================================
+    ==================================== =======================================
+    block number\ ``.``\ field\ ``<``    Normal table write, fixed table
+    block number\ ``.``\ field\ ``<<``   Normal table write, streaming table
+    block number\ ``.``\ field\ ``<<|``  Normal table write, last streaming
+                                         table
+    block number\ ``.``\ field\ ``<B``   Base-64 table write, fixed table
+    block number\ ``.``\ field\ ``<<B``  Base-64 table write, streaming table
+    block number\ ``.``\ field\ ``<<|B`` Base-64 table write, last streaming
+                                         table
+    ==================================== =======================================
 
     For "normal" table writes the data is sent as a sequence of decimal numbers
     in ASCII, and the whole sequence must be terminate by an empty blank line.
@@ -339,6 +339,41 @@ Field type          Description
         Returns the number of 32-bit words in a single row of the table.  This
         can be used to help interpret the ``FIELDS`` result.
 
+    ``QUEUED_LINES``
+        When a fixed table is written, it returns the number of lines in that
+        table, when streaming tables are written, it returns the number of lines
+        that has been scheduled including the ones currently being used by the
+        FPGA.
+
+    ``MODE``
+        Indicates the mode that the table is in as a consequence of the last
+        table write. The possible values are: ``INIT`` (no table),
+        ``FIXED`` (fixed table), ``STREAMING`` (streaming table) and
+        ``STREAMING_LAST`` (last streaming table). Writing an empty table will
+        always move the table to ``INIT`` state. In addition to this mode,
+        there is also implicit completed state in the FPGA that happens either
+        when there is a sudden error or when the streaming is finished, it will
+        cause any future writes to be rejected and the mode attribute will keep
+        the last value until a reset is done, this is to ensure the client is
+        aware of any error. The following table summarises the mode transitions
+        for each table command, where ``<0`` represents writing an empty table.
+
+        +-------------------+---------+-----------+----------------+--------+
+        |  MODE / COMMAND   |  ``<``  | ``<<``    | ``<<|``        | ``<0`` |
+        +-------------------+---------+-----------+----------------+--------+
+        | INIT              | FIXED   | STREAMING | STREAMING_LAST | INIT   |
+        +-------------------+---------+-----------+----------------+--------+
+        | FIXED             | FIXED   | STREAMING | STREAMING_LAST | INIT   |
+        +-------------------+---------+-----------+----------------+--------+
+        | STREAMING         | Reject  | STREAMING | STREAMING_LAST | INIT   |
+        +-------------------+---------+-----------+----------------+--------+
+        | STREAMING_LAST    | Reject  | Reject    | Reject         | INIT   |
+        +-------------------+---------+-----------+----------------+--------+
+        | COMPLETED[HEALTH] | Reject  | Reject    | Reject         | INIT   |
+        +-------------------+---------+-----------+----------------+--------+
+
+        Writing empty tables with ``<<`` or ``<<|`` is rejected to avoid
+        accidental mistakes in streaming mode.
 
 Field Sub-Types
 ---------------
@@ -466,7 +501,6 @@ scalar          RAW             Underlying integer value                R W
 lut             RAW             Computed Lookup Table 32-bit value      R
 time            UNITS           Units and scaling selection for time    R W C
 \               RAW             Raw time in FPGA clock cycles           R W
-\               MIN             Minimum valid setting (for type only)   R
 bit_out         CAPTURE_WORD    Capturable word containing this bit     R
 \               OFFSET          Offset of this bit in captured word     R
 bit_mux         DELAY           Bit input delay in FPGA ticks           R W C

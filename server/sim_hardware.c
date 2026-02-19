@@ -214,8 +214,9 @@ static unsigned int block_id_count = 0;
 error__t hw_long_table_allocate(
     unsigned int block_base, unsigned int number,
     unsigned int base_reg, unsigned int length_reg,
-    unsigned int order,
-    size_t *block_size, uint32_t **data, int *block_id)
+    unsigned int order, unsigned int max_nbuffers,
+    size_t *block_size, uint32_t **data, int *block_id,
+    unsigned int dma_channel)
 {
     if (block_id_count < MAX_BLOCK_ID)
     {
@@ -237,28 +238,28 @@ error__t hw_long_table_allocate(
 }
 
 
-void hw_long_table_release(int block_id)
+void hw_long_table_release(int block_id, void *data)
 {
-    ASSERT_OK(0 <= block_id  &&  block_id < (int) block_id_count);
-    struct table_block *block = &block_id_table[block_id];
-    free(block->data);
+    free(data);
 }
 
 
-void hw_long_table_write(
-    int block_id, const void *data, size_t length, size_t offset)
+error__t hw_long_table_write(
+    int block_id, const void *data, size_t length, bool streaming_mode,
+    bool last_table)
 {
     ASSERT_OK(0 <= block_id  &&  block_id < (int) block_id_count);
     struct table_block *block = &block_id_table[block_id];
+    size_t nbytes = length * sizeof(uint32_t);
 
-    memcpy(block->data + offset, data, length);
-
-    uint32_t words = (uint32_t) (offset + length) / sizeof(uint32_t);
+    memcpy(block->data, data, nbytes);
+    ASSERT_OK(length == (uint32_t) length);
     WITH_MUTEX(mutex)
         handle_error(
             write_command_int('T',
-                block->block_base, block->number, 0, words)  ?:
-            write_all(block->data, offset + length));
+                block->block_base, block->number, 0, (uint32_t) length)  ?:
+            write_all(block->data, nbytes));
+    return ERROR_OK;
 }
 
 
